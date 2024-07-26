@@ -19,6 +19,22 @@
                 padding-bottom: env(safe-area-inset-bottom);
             }
         }
+        .day-circle {
+            width: 100%;
+            height: 0;
+            padding-bottom: 100%;
+            position: relative;
+        }
+        .day-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col h-screen">
@@ -78,7 +94,7 @@
             const dayLabels = ['Sa', 'Fr', 'Th', 'We', 'Tu', 'Mo', 'Su'];
             dayLabels.forEach(day => {
                 const dayLabel = document.createElement('div');
-                dayLabel.className = 'text-center text-sm font-medium text-gray-500';
+                dayLabel.className = 'text-center text-xs font-medium text-gray-500';
                 dayLabel.textContent = day;
                 monthGrid.appendChild(dayLabel);
             });
@@ -95,8 +111,8 @@
             // Add days in reverse order
             for (let day = daysInMonth; day >= 1; day--) {
                 const dayElement = document.createElement('div');
-                dayElement.className = 'aspect-square flex justify-center items-center text-sm cursor-pointer rounded-full transition-colors duration-300 border border-gray-200';
-                dayElement.textContent = day;
+                dayElement.className = 'day-circle';
+                dayElement.innerHTML = `<div class="day-content cursor-pointer rounded-full transition-colors duration-300 border border-gray-200 bg-gray-300"><span class="text-lg font-bold">${day}</span></div>`;
                 dayElement.dataset.date = `${year}-${month + 1}-${day}`;
                 dayElement.addEventListener('click', toggleState);
                 monthGrid.appendChild(dayElement);
@@ -110,7 +126,7 @@
         }
 
         function toggleState(event) {
-            const day = event.target;
+            const day = event.currentTarget;
             const currentState = day.dataset.state ? parseInt(day.dataset.state) : -1;
             const newState = (currentState + 1) % 4;
             updateDayState(day, newState);
@@ -119,16 +135,17 @@
 
         function updateDayState(dayElement, state) {
             dayElement.dataset.state = state;
-            dayElement.className = `aspect-square flex justify-center items-center text-sm cursor-pointer rounded-full transition-colors duration-300 border border-gray-200 ${getStateClass(state)}`;
+            const dayContent = dayElement.querySelector('.day-content');
+            dayContent.className = `day-content cursor-pointer rounded-full transition-colors duration-300 border border-gray-200 ${getStateClass(state)}`;
         }
 
         function getStateClass(state) {
             switch (state) {
-                case -1: return '';
+                case -1: return 'bg-gray-300';
                 case 0: return 'bg-red-500 text-white';
                 case 1: return 'bg-gray-500 text-white';
                 case 2: return 'bg-blue-500 text-white';
-                default: return '';
+                default: return 'bg-gray-300';
             }
         }
 
@@ -144,7 +161,7 @@
             days.forEach(day => {
                 const state = habits[day.dataset.date];
                 if (state !== undefined) {
-                    updateDayState(day, state);
+                    updateDayState(day, parseInt(state));
                 }
             });
         }
