@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HAIETMOBA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="#manifest">
+    <meta name="theme-color" content="#4A5568">
+    <link rel="icon" type="image/svg+xml" href="#svg-icon">
+    <link rel="apple-touch-icon" href="#svg-icon">
+    <style>
+        body {
+            overscroll-behavior-y: contain;
+        }
+        @media (display-mode: standalone) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen">
+    <header class="bg-gray-800 text-white p-4 flex items-center justify-between">
+        <div class="flex items-center">
+            <svg class="w-8 h-8 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM14.59 8L12 10.59L9.41 8L8 9.41L10.59 12L8 14.59L9.41 16L12 13.41L14.59 16L16 14.59L13.41 12L16 9.41L14.59 8Z" fill="currentColor"/>
+            </svg>
+            <h1 class="text-xl font-bold">HAIETMOBA</h1>
+        </div>
+        <button id="installButton" class="bg-blue-500 text-white px-3 py-1 rounded hidden">Install</button>
+    </header>
+
+    <main class="flex-grow overflow-auto p-4" id="calendar"></main>
+
+    <footer class="bg-gray-800 text-white p-4 text-center text-sm">
+        Tap a day to change its state
+    </footer>
+
+    <script>
+        const calendar = document.getElementById('calendar');
+        const currentDate = new Date();
+
+        function createCalendar() {
+            calendar.innerHTML = '';
+            const calendarGrid = document.createElement('div');
+            calendarGrid.className = 'grid grid-cols-1 gap-8';
+            calendar.appendChild(calendarGrid);
+
+            for (let i = 0; i <= 2; i++) {
+                const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                createMonthCalendar(monthDate, calendarGrid);
+            }
+        }
+
+        function createMonthCalendar(date, container) {
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+
+            const monthContainer = document.createElement('div');
+            monthContainer.className = 'flex flex-col';
+            container.appendChild(monthContainer);
+
+            const monthName = date.toLocaleString('default', { month: 'long' });
+            const monthNameElement = document.createElement('div');
+            monthNameElement.className = 'text-xl font-bold mb-4 text-center text-gray-800';
+            monthNameElement.textContent = `${monthName} ${year}`;
+            monthContainer.appendChild(monthNameElement);
+
+            const monthGrid = document.createElement('div');
+            monthGrid.className = 'grid grid-cols-7 gap-2';
+            monthContainer.appendChild(monthGrid);
+
+            const dayLabels = ['Sa', 'Fr', 'Th', 'We', 'Tu', 'Mo', 'Su'];
+            dayLabels.forEach(day => {
+                const dayLabel = document.createElement('div');
+                dayLabel.className = 'text-center text-sm font-medium text-gray-500';
+                dayLabel.textContent = day;
+                monthGrid.appendChild(dayLabel);
+            });
+
+            const totalCells = 7 * Math.ceil((daysInMonth + firstDay.getDay()) / 7);
+            const emptyEndCells = totalCells - daysInMonth - firstDay.getDay();
+
+            // Add empty cells at the end
+            for (let i = 0; i < emptyEndCells; i++) {
+                const emptyDay = document.createElement('div');
+                monthGrid.appendChild(emptyDay);
+            }
+
+            // Add days in reverse order
+            for (let day = daysInMonth; day >= 1; day--) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'aspect-square flex justify-center items-center text-sm cursor-pointer rounded-full transition-colors duration-300 border border-gray-200';
+                dayElement.textContent = day;
+                dayElement.dataset.date = `${year}-${month + 1}-${day}`;
+                dayElement.addEventListener('click', toggleState);
+                monthGrid.appendChild(dayElement);
+            }
+
+            // Add empty cells at the start
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const emptyDay = document.createElement('div');
+                monthGrid.appendChild(emptyDay);
+            }
+        }
+
+        function toggleState(event) {
+            const day = event.target;
+            const currentState = day.dataset.state ? parseInt(day.dataset.state) : -1;
+            const newState = (currentState + 1) % 4;
+            updateDayState(day, newState);
+            saveState(day.dataset.date, newState);
+        }
+
+        function updateDayState(dayElement, state) {
+            dayElement.dataset.state = state;
+            dayElement.className = `aspect-square flex justify-center items-center text-sm cursor-pointer rounded-full transition-colors duration-300 border border-gray-200 ${getStateClass(state)}`;
+        }
+
+        function getStateClass(state) {
+            switch (state) {
+                case -1: return '';
+                case 0: return 'bg-red-500 text-white';
+                case 1: return 'bg-gray-500 text-white';
+                case 2: return 'bg-blue-500 text-white';
+                default: return '';
+            }
+        }
+
+        function saveState(date, state) {
+            const habits = JSON.parse(localStorage.getItem('habits') || '{}');
+            habits[date] = state;
+            localStorage.setItem('habits', JSON.stringify(habits));
+        }
+
+        function loadStates() {
+            const habits = JSON.parse(localStorage.getItem('habits') || '{}');
+            const days = document.querySelectorAll('[data-date]');
+            days.forEach(day => {
+                const state = habits[day.dataset.date];
+                if (state !== undefined) {
+                    updateDayState(day, state);
+                }
+            });
+        }
+
+        createCalendar();
+        loadStates();
+
+        // PWA install prompt
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButton.classList.remove('hidden');
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+            }
+            installButton.classList.add('hidden');
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch((error) => {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+
+    <script type="application/json" id="manifest">
+    {
+        "name": "HAIETMOBA",
+        "short_name": "HAIETMOBA",
+        "description": "Habit tracker app",
+        "start_url": "./",
+        "display": "standalone",
+        "background_color": "#4A5568",
+        "theme_color": "#4A5568",
+        "icons": [
+            {
+                "src": "#svg-icon",
+                "sizes": "192x192",
+                "type": "image/svg+xml",
+                "purpose": "any maskable"
+            }
+        ]
+    }
+    </script>
+
+    <script type="application/json" id="svg-icon">
+    data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234A5568"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM14.59 8L12 10.59L9.41 8L8 9.41L10.59 12L8 14.59L9.41 16L12 13.41L14.59 16L16 14.59L13.41 12L16 9.41L14.59 8Z"/></svg>
+    </script>
+</body>
+</html>
